@@ -23,7 +23,7 @@ class OrderController extends Controller
 
     public function show(Request $request, Order $order): OrderResource
     {
-        abort_unless($order->user_id === $request->user()->id, 404);
+        abort_unless($request->user()->can('view', $order), 404);
 
         $order->load('items.product');
 

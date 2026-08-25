@@ -34,6 +34,7 @@ class CartController extends Controller
 
     public function update(UpdateCartItemRequest $request, CartItem $cartItem): CartResource
     {
+        $this->authorize('update', $cartItem);
         $cart = $this->carts->updateQuantity(
             $request->user(),
             $cartItem,
@@ -45,6 +46,7 @@ class CartController extends Controller
 
     public function destroy(Request $request, CartItem $cartItem): CartResource
     {
+        $this->authorize('delete', $cartItem);
         return new CartResource($this->carts->remove($request->user(), $cartItem));
     }
 }

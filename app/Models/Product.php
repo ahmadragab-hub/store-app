@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\HttpImage;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,6 +26,11 @@ class Product extends Model
             'price' => 'decimal:2',
             'stock' => 'integer',
         ];
+    }
+
+    protected function imageSrc(): Attribute
+    {
+        return Attribute::get(fn () => HttpImage::src($this->image));
     }
 
     public function category(): BelongsTo

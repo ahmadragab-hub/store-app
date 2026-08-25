@@ -10,13 +10,30 @@
 </head>
 <body class="min-h-screen bg-paper font-sans text-ink antialiased">
     <header class="border-b border-stone-200/80 bg-white/80 backdrop-blur">
-        <nav class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-            <a href="{{ url('/') }}" class="text-lg font-semibold tracking-tight text-stone-900">
+        <nav class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
+            <a href="{{ route('home') }}" class="text-lg font-semibold tracking-tight text-stone-900">
                 {{ config('app.name') }}
             </a>
 
-            <div class="flex items-center gap-3 text-sm">
+            <div class="flex flex-wrap items-center gap-2 text-sm sm:gap-3">
+                <a href="{{ route('shop.index') }}" class="rounded-lg px-3 py-1.5 font-medium text-stone-700 transition hover:bg-stone-100">
+                    Shop
+                </a>
                 @auth
+                    <a href="{{ route('cart.show') }}" class="rounded-lg px-3 py-1.5 font-medium text-stone-700 transition hover:bg-stone-100">
+                        Cart
+                    </a>
+                    <a href="{{ route('orders.index') }}" class="rounded-lg px-3 py-1.5 font-medium text-stone-700 transition hover:bg-stone-100">
+                        Orders
+                    </a>
+                    @if (auth()->user()->isAdmin())
+                        <a href="{{ route('categories.index') }}" class="rounded-lg px-3 py-1.5 font-medium text-stone-700 transition hover:bg-stone-100">
+                            Categories
+                        </a>
+                        <a href="{{ route('products.index') }}" class="rounded-lg px-3 py-1.5 font-medium text-stone-700 transition hover:bg-stone-100">
+                            Products
+                        </a>
+                    @endif
                     <span class="hidden text-stone-600 sm:inline">{{ auth()->user()->name }}</span>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -36,8 +53,18 @@
         </nav>
     </header>
 
-    <main class="mx-auto flex w-full max-w-5xl flex-1 justify-center px-4 py-12 sm:px-6 sm:py-16">
-        @yield('content')
+    <main class="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-12 sm:px-6 sm:py-16">
+        @if (session('success'))
+            <p class="store-flash-success mb-6">{{ session('success') }}</p>
+        @endif
+
+        @if (session('error'))
+            <p class="store-flash-error mb-6">{{ session('error') }}</p>
+        @endif
+
+        <div class="flex flex-1 justify-center">
+            @yield('content')
+        </div>
     </main>
 </body>
 </html>

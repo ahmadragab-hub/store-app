@@ -2,6 +2,7 @@
 
 use App\Exceptions\StoreException;
 use App\Http\Middleware\EnsureJsonRequest;
+use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,14 +16,26 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias([
+            'admin' => EnsureUserIsAdmin::class,
+        ]);
+
         $middleware->api(prepend: [
             EnsureJsonRequest::class,
+        ]);
+
+        $middleware->api(append: [
+            'throttle:api',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (StoreException $e, Request $request) {
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], 422);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+
+            return back()->with('error', $e->getMessage());
         });
     })->create();

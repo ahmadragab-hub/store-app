@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class CheckoutService
 {
+    public function __construct(private MockPaymentGateway $payments)
+    {
+    }
+
     public function checkout(User $user): Order
     {
         return DB::transaction(function () use ($user) {
@@ -44,7 +48,7 @@ class CheckoutService
 
             $order = $user->orders()->create([
                 'total' => $total,
-                'status' => 'paid',
+                'status' => 'pending',
             ]);
 
             foreach ($items as $item) {
@@ -61,5 +65,26 @@ class CheckoutService
 
             return $order->load('items.product');
         });
+    }
+
+    public function pay(User $user, Order $order, string $cardNumber): Order
+    {
+        abort_unless($user->id === $order->user_id, 404);
+
+        if ($order->status === 'paid') {
+            throw new StoreException('This order is already paid.');
+        }
+
+        if ($order->status !== 'pending') {
+            throw new StoreException('This order cannot be paid.');
+        }
+
+        if (! $this->payments->charge($cardNumber, (float) $order->total)) {
+            throw new StoreException('Payment failed. Use test card 4242 4242 4242 4242.');
+        }
+
+        $order->update(['status' => 'paid']);
+
+        return $order->fresh(['items.product']);
     }
 }

@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Services;
+
+use App\Exceptions\StoreException;
+use App\Models\Category;
+use Illuminate\Database\Eloquent\Collection;
+
+class CategoryService
+{
+    public function list(): Collection
+    {
+        return Category::query()
+            ->withCount('products')
+            ->latest()
+            ->get();
+    }
+
+    public function find(Category $category): Category
+    {
+        $category->loadCount('products');
+
+        return $category;
+    }
+
+    public function create(array $data): Category
+    {
+        return Category::query()->create($data);
+    }
+
+    public function update(Category $category, array $data): Category
+    {
+        $category->update($data);
+
+        return $category;
+    }
+
+    public function delete(Category $category): void
+    {
+        if ($category->products()->exists()) {
+            throw new StoreException('This category still has products. Move or delete them first.');
+        }
+
+        $category->delete();
+    }
+}

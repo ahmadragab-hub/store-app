@@ -33,6 +33,10 @@
         </div>
 
         <p class="mt-6 text-center text-sm text-stone-600">
+            <a href="{{ route('password.request') }}" class="font-semibold text-stone-900 underline decoration-stone-300 underline-offset-4 hover:decoration-stone-900">Forgot password?</a>
+        </p>
+
+        <p class="mt-6 text-center text-sm text-stone-600">
             Need an account?
             <a href="{{ route('register') }}" class="font-semibold text-stone-900 underline decoration-stone-300 underline-offset-4 hover:decoration-stone-900">Register</a>
         </p>
