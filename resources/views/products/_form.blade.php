@@ -34,8 +34,12 @@
 </div>
 
 <div>
-    <label for="image" class="store-label">Image URL</label>
-    <input id="image" name="image" type="text" value="{{ old('image', $product->image) }}" class="store-input" placeholder="https://example.com/product.jpg">
+    <label for="image" class="store-label">Image upload</label>
+    <input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" class="store-input">
+    <p class="mt-1 text-xs text-stone-500">JPG, PNG, or WebP. Max 2MB. Stored with a hashed filename.</p>
+    @if ($product->image_src)
+        <img src="{{ $product->image_src }}" alt="" class="mt-3 h-24 w-24 rounded-lg object-cover">
+    @endif
     @error('image')
         <p class="store-error">{{ $message }}</p>
     @enderror

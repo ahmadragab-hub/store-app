@@ -10,22 +10,27 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $customer = User::query()->firstOrNew(['email' => 'customer@store.test']);
+        $customer->forceFill([
+            'name' => 'Demo Customer',
+            'password' => 'password',
             'role' => 'customer',
-        ]);
+            'email_verified_at' => now(),
+        ])->save();
 
-        User::factory()->admin()->create([
-            'name' => 'Admin',
-            'email' => 'admin@example.com',
-        ]);
+        $admin = User::query()->firstOrNew(['email' => 'admin@store.test']);
+        $admin->forceFill([
+            'name' => 'Demo Admin',
+            'password' => 'password',
+            'role' => 'admin',
+            'email_verified_at' => now(),
+        ])->save();
 
-        $this->call(StoreSeeder::class);
+        $this->call([
+            StoreSeeder::class,
+            DemoSeeder::class,
+        ]);
     }
 }

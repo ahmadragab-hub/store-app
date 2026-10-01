@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CheckoutRequest;
 use App\Http\Requests\PayOrderRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Services\CheckoutService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class CheckoutController extends Controller
 {
@@ -16,9 +16,9 @@ class CheckoutController extends Controller
     {
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(CheckoutRequest $request): JsonResponse
     {
-        $order = $this->checkout->checkout($request->user());
+        $order = $this->checkout->checkout($request->user(), $request->shipping());
 
         return (new OrderResource($order))
             ->response()
@@ -32,7 +32,7 @@ class CheckoutController extends Controller
         $order = $this->checkout->pay(
             $request->user(),
             $order,
-            $request->string('card_number')->toString(),
+            $request->paymentToken(),
         );
 
         return new OrderResource($order);

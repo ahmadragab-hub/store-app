@@ -1,41 +1,41 @@
 @extends('layouts.app')
 
-@section('title', 'Orders')
+@section('title', $adminMode ? 'All orders' : 'Orders')
 
 @section('content')
-    <section class="w-full">
-        <div>
-            <p class="text-sm font-medium text-accent">Account</p>
-            <h1 class="mt-1 text-2xl font-semibold tracking-tight text-stone-900">Your orders</h1>
-        </div>
+    <p class="store-eyebrow">{{ $adminMode ? 'Administration' : 'Account' }}</p>
+    <h1 class="store-title mt-2">{{ $adminMode ? 'All orders' : 'Your orders' }}</h1>
+    <p class="store-lede">{{ $adminMode ? 'Manage fulfillment across customers.' : 'Track status, totals, and shipment details.' }}</p>
 
-        <div class="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
-            @forelse ($orders as $order)
-                @if ($loop->first)
-                    <div class="hidden grid-cols-12 gap-4 border-b border-stone-200 bg-stone-50 px-6 py-3 text-xs font-semibold uppercase tracking-wide text-stone-500 sm:grid">
-                        <span class="col-span-3">Order</span>
-                        <span class="col-span-3">Date</span>
-                        <span class="col-span-2">Status</span>
-                        <span class="col-span-2">Total</span>
-                        <span class="col-span-2 text-right"> </span>
-                    </div>
+    <div class="store-surface mt-10 overflow-hidden">
+        @forelse ($orders as $order)
+            <div class="store-order-row">
+                <div class="font-display font-semibold text-ink sm:col-span-2">#{{ $order->id }}</div>
+                @if ($adminMode)
+                    <div class="truncate text-sm text-muted sm:col-span-3">{{ $order->user?->email }}</div>
                 @endif
-                <div class="grid grid-cols-1 gap-2 border-b border-stone-100 px-6 py-4 last:border-b-0 sm:grid-cols-12 sm:items-center">
-                    <div class="font-medium text-stone-900 sm:col-span-3">#{{ $order->id }}</div>
-                    <div class="text-sm text-stone-600 sm:col-span-3">{{ $order->created_at?->format('M j, Y') }}</div>
-                    <div class="text-sm text-stone-600 sm:col-span-2">{{ $order->status }}</div>
-                    <div class="text-sm text-stone-900 sm:col-span-2">${{ number_format((float) $order->total, 2) }}</div>
-                    <div class="sm:col-span-2 sm:text-right">
-                        <a href="{{ route('orders.show', $order) }}" class="text-sm font-medium text-stone-700 hover:text-stone-900">View</a>
-                    </div>
+                <div class="text-sm text-muted {{ $adminMode ? 'sm:col-span-2' : 'sm:col-span-3' }}">{{ $order->created_at?->format('M j, Y') }}</div>
+                <div class="sm:col-span-2">
+                    <span class="store-status store-status-{{ $order->status }}">{{ $order->status }}</span>
                 </div>
-            @empty
-                <div class="px-6 py-12 text-center text-sm text-stone-600">You have no orders yet.</div>
-            @endforelse
-        </div>
+                <div class="font-display text-sm font-semibold sm:col-span-2">${{ number_format((float) $order->total, 2) }}</div>
+                <div class="sm:col-span-1 sm:text-right">
+                    <a href="{{ route('orders.show', $order) }}" class="store-link text-sm">Details</a>
+                </div>
+            </div>
+        @empty
+            <div class="p-10">
+                @include('storefront._empty', [
+                    'title' => 'No orders yet',
+                    'message' => $adminMode ? 'Orders will appear here as customers checkout.' : 'When you purchase, orders show up here.',
+                    'actionUrl' => $adminMode ? route('shop.index') : route('shop.index'),
+                    'actionLabel' => 'Browse shop',
+                ])
+            </div>
+        @endforelse
+    </div>
 
-        @if ($orders->hasPages())
-            <div class="mt-6">{{ $orders->links() }}</div>
-        @endif
-    </section>
+    @if ($orders->hasPages())
+        <div class="store-pagination mt-8">{{ $orders->links() }}</div>
+    @endif
 @endsection

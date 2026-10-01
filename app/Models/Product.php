@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
-use App\Support\HttpImage;
+use App\Support\StoreImage;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'category_id',
         'name',
@@ -30,7 +33,7 @@ class Product extends Model
 
     protected function imageSrc(): Attribute
     {
-        return Attribute::get(fn () => HttpImage::src($this->image));
+        return Attribute::get(fn () => StoreImage::url($this->image));
     }
 
     public function category(): BelongsTo

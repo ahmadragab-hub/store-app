@@ -6,14 +6,14 @@
     <section class="w-full">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <p class="text-sm font-medium text-accent">Catalog</p>
-                <h1 class="mt-1 text-2xl font-semibold tracking-tight text-stone-900">Categories</h1>
-                <p class="mt-2 text-sm text-stone-600">Create and manage the groups products belong to.</p>
+                <p class="text-xs font-medium uppercase tracking-[0.16em] text-accent">Catalog</p>
+                <h1 class="font-display mt-2 text-3xl font-semibold tracking-tight text-ink">Categories</h1>
+                <p class="mt-2 text-sm text-muted">Group products for the storefront.</p>
             </div>
             <a href="{{ route('categories.create') }}" class="store-button-inline">Add category</a>
         </div>
 
-        <div class="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+        <div class="mt-8 divide-y divide-line border-y border-line bg-surface">
             @forelse ($categories as $category)
                 @if ($loop->first)
                     <div class="hidden grid-cols-12 gap-4 border-b border-stone-200 bg-stone-50 px-6 py-3 text-xs font-semibold uppercase tracking-wide text-stone-500 sm:grid">

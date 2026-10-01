@@ -9,12 +9,17 @@ class UserResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        return [
+        $data = [
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
             'email_verified_at' => $this->email_verified_at,
-            'role' => $this->role,
         ];
+
+        if ($request->user()?->id === $this->id && $this->resource->isAdmin()) {
+            $data['role'] = $this->role;
+        }
+
+        return $data;
     }
 }

@@ -25,33 +25,41 @@ class CartService
 
     public function add(User $user, int $productId, int $quantity): Cart
     {
+        // get the product by id and check if it is active
         $product = Product::query()
             ->where('status', 'active')
             ->findOrFail($productId);
 
+        // get the cart by user id and check if it is owned by the user
         $cart = $this->getOrCreate($user);
+        // get the item by product id and check if it is in the cart and get the quantity
         $item = $cart->items()->where('product_id', $product->id)->first();
+        // calculate the new quantity
         $newQuantity = ($item?->quantity ?? 0) + $quantity;
 
+        // check if the new quantity is greater than the stock
         if ($newQuantity > $product->stock) {
             throw new StoreException('Not enough stock for this product.');
         }
 
+        // if the item is in the cart, update the quantity
         if ($item) {
             $item->update(['quantity' => $newQuantity]);
         } else {
+            // if the item is not in the cart, create a new item
             $cart->items()->create([
                 'product_id' => $product->id,
                 'quantity' => $quantity,
             ]);
         }
 
+        // return the contents of the cart
         return $this->contents($user);
     }
 
     public function updateQuantity(User $user, CartItem $cartItem, int $quantity): Cart
     {
-        $cart = $this->ownedCartItem($user, $cartItem);
+        $this->ownedCartItem($user, $cartItem);
         $product = $cartItem->product;
 
         if ($product->status !== 'active') {
@@ -74,13 +82,9 @@ class CartService
 
         return $this->contents($user);
     }
-
-    private function ownedCartItem(User $user, CartItem $cartItem): Cart
+    
+    private function ownedCartItem(User $user, CartItem $cartItem): void
     {
-        $cart = $this->getOrCreate($user);
-
-        abort_unless($cartItem->cart_id === $cart->id, 404);
-
-        return $cart;
+        abort_unless($cartItem->cart?->user_id === $user->id, 404);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CheckoutRequest;
 use App\Http\Requests\PayOrderRequest;
 use App\Models\Order;
 use App\Services\CartService;
@@ -35,20 +36,20 @@ class CheckoutController extends Controller
         return view('checkout.create', compact('cart', 'total'));
     }
 
-    public function store(): RedirectResponse
+    public function store(CheckoutRequest $request): RedirectResponse
     {
-        $order = $this->checkout->checkout(auth()->user());
+        $order = $this->checkout->checkout($request->user(), $request->shipping());
 
         return redirect()
             ->route('checkout.pay', $order)
-            ->with('success', 'Order created. Pay with the test card to complete it.');
+            ->with('success', 'Order created. Complete payment to confirm it.');
     }
 
     public function payForm(Order $order): View|RedirectResponse
     {
         abort_unless(auth()->user()->can('pay', $order), 404);
 
-        if ($order->status === 'paid') {
+        if ($order->status === Order::STATUS_PAID) {
             return redirect()
                 ->route('orders.show', $order)
                 ->with('success', 'This order is already paid.');
@@ -58,6 +59,7 @@ class CheckoutController extends Controller
 
         return view('checkout.pay', [
             'order' => $order,
+            'driver' => (string) config('payments.driver', 'mock'),
             'testCard' => MockPaymentGateway::TEST_CARD,
         ]);
     }
@@ -66,10 +68,10 @@ class CheckoutController extends Controller
     {
         abort_unless($request->user()->can('pay', $order), 404);
 
-        $this->checkout->pay($request->user(), $order, $request->string('card_number')->toString());
+        $this->checkout->pay($request->user(), $order, $request->paymentToken());
 
         return redirect()
             ->route('orders.show', $order)
-            ->with('success', 'Payment successful.');
+            ->with('success', 'Payment successful. A confirmation email was sent.');
     }
 }

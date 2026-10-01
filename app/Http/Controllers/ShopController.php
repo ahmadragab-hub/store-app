@@ -20,7 +20,23 @@ class ShopController extends Controller
             ->withCount(['products' => function ($query) {
                 $query->where('status', 'active');
             }])
+            ->orderBy('name')
+            ->get();
+
+        $featuredProducts = Product::query()
+            ->where('status', 'active')
+            ->whereIn('name', config('demo.featured_product_names', []))
+            ->with('category')
+            ->orderBy('name')
+            ->take(8)
+            ->get();
+
+        $newProducts = Product::query()
+            ->where('status', 'active')
+            ->where('created_at', '>=', now()->subDays((int) config('demo.new_within_days', 14)))
+            ->with('category')
             ->latest()
+            ->take(8)
             ->get();
 
         $products = Product::query()
@@ -30,13 +46,20 @@ class ShopController extends Controller
             ->take(8)
             ->get();
 
-        return view('shop.home', compact('categories', 'products'));
+        return view('shop.home', compact('categories', 'products', 'featuredProducts', 'newProducts'));
     }
 
     public function index(Request $request): View
     {
         $categories = Category::query()->orderBy('name')->get();
-        $products = $this->products->shopList($request->integer('category_id') ?: null);
+        $search = $request->filled('q') ? $request->string('q')->trim()->toString() : null;
+        $sort = $request->string('sort', 'latest')->toString();
+
+        $products = $this->products->shopList(
+            $request->integer('category_id') ?: null,
+            $search !== '' ? $search : null,
+            $sort,
+        );
 
         return view('shop.index', compact('products', 'categories'));
     }
@@ -47,6 +70,15 @@ class ShopController extends Controller
 
         $product->load('category');
 
-        return view('shop.show', compact('product'));
+        $relatedProducts = Product::query()
+            ->where('status', 'active')
+            ->where('category_id', $product->category_id)
+            ->whereKeyNot($product->id)
+            ->with('category')
+            ->inRandomOrder()
+            ->take(4)
+            ->get();
+
+        return view('shop.show', compact('product', 'relatedProducts'));
     }
 }

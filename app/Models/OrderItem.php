@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderItem extends Model
 {
+    /**
+     * Line prices are set in CheckoutService via forceFill(), not from HTTP input.
+     */
     protected $fillable = [
         'order_id',
         'product_id',
         'quantity',
-        'price',
     ];
 
     protected function casts(): array

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Exceptions\StoreException;
 use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
-use App\Http\Responses\CategoryResponse;
 use App\Models\Category;
 use App\Services\CategoryService;
 use Illuminate\Http\RedirectResponse;
@@ -13,59 +12,81 @@ use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
-    public function __construct(
-        private CategoryService $categories,
-        private CategoryResponse $responses,
-    ) {
+    public function __construct(private CategoryService $categories)
+    {
     }
 
     public function index(): View
     {
         $this->authorize('viewAny', Category::class);
-        return $this->responses->index($this->categories->list());
+
+        return view('categories.index', [
+            'categories' => $this->categories->list(),
+        ]);
     }
 
     public function create(): View
     {
         $this->authorize('create', Category::class);
-        return $this->responses->create(new Category());
+
+        return view('categories.create', [
+            'category' => new Category(),
+        ]);
     }
 
     public function store(StoreCategoryRequest $request): RedirectResponse
     {
-        $this->categories->create($request->validated());
+        $this->categories->create(
+            $request->categoryData(),
+            $request->file('image'),
+        );
 
-        return $this->responses->stored();
+        return redirect()
+            ->route('categories.index')
+            ->with('success', 'Category created.');
     }
 
     public function show(Category $category): View
     {
         $this->authorize('view', $category);
-        return $this->responses->show($this->categories->find($category));
+
+        return view('categories.show', [
+            'category' => $this->categories->find($category),
+        ]);
     }
 
     public function edit(Category $category): View
     {
         $this->authorize('update', $category);
-        return $this->responses->edit($category);
+
+        return view('categories.edit', compact('category'));
     }
 
     public function update(UpdateCategoryRequest $request, Category $category): RedirectResponse
     {
-        $this->categories->update($category, $request->validated());
+        $this->categories->update(
+            $category,
+            $request->categoryData(),
+            $request->file('image'),
+        );
 
-        return $this->responses->updated();
+        return redirect()
+            ->route('categories.index')
+            ->with('success', 'Category updated.');
     }
 
     public function destroy(Category $category): RedirectResponse
     {
         $this->authorize('delete', $category);
+
         try {
             $this->categories->delete($category);
         } catch (StoreException $e) {
-            return $this->responses->failed($e->getMessage());
+            return back()->with('error', $e->getMessage());
         }
 
-        return $this->responses->deleted();
+        return redirect()
+            ->route('categories.index')
+            ->with('success', 'Category deleted.');
     }
 }

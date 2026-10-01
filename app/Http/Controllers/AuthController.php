@@ -7,10 +7,13 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Models\User;
+use App\Services\CartService;
+use App\Services\GuestCartService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -18,6 +21,12 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
+    public function __construct(
+        private GuestCartService $guestCarts,
+        private CartService $carts,
+    ) {
+    }
+
     public function create(): View
     {
         return view('auth.register');
@@ -30,6 +39,7 @@ class AuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $this->guestCarts->mergeInto($user, $this->carts);
 
         return redirect()->route('verification.notice');
     }
@@ -48,6 +58,7 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+        $this->guestCarts->mergeInto($request->user(), $this->carts);
 
         return redirect()->intended(route('home'));
     }
@@ -97,6 +108,9 @@ class AuthController extends Controller
                     'password' => $password,
                     'remember_token' => Str::random(60),
                 ])->save();
+
+                DB::table('sessions')->where('user_id', $user->id)->delete();
+                $user->tokens()->delete();
 
                 event(new PasswordReset($user));
             }

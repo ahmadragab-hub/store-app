@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Support\HttpImage;
+use App\Support\StoreImage;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,14 +22,15 @@ class UpdateCategoryRequest extends FormRequest
                 'max:255',
                 Rule::unique('categories', 'name')->ignore($this->route('category')),
             ],
-            'image' => HttpImage::rule(),
+            'image' => StoreImage::uploadRules(),
         ];
     }
 
-    protected function prepareForValidation(): void
+    /**
+     * @return array<string, mixed>
+     */
+    public function categoryData(): array
     {
-        $this->merge([
-            'image' => $this->filled('image') ? $this->image : null,
-        ]);
+        return $this->safe()->except('image');
     }
 }

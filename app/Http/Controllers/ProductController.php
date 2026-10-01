@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\StoreException;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Category;
@@ -31,6 +32,7 @@ class ProductController extends Controller
     public function create(): View
     {
         $this->authorize('create', Product::class);
+
         return view('products.create', [
             'product' => new Product(['status' => 'active', 'stock' => 0]),
             'categories' => Category::query()->orderBy('name')->get(),
@@ -39,7 +41,10 @@ class ProductController extends Controller
 
     public function store(StoreProductRequest $request): RedirectResponse
     {
-        $this->products->create($request->validated());
+        $this->products->create(
+            $request->productData(),
+            $request->file('image'),
+        );
 
         return redirect()
             ->route('products.index')
@@ -57,6 +62,7 @@ class ProductController extends Controller
     public function edit(Product $product): View
     {
         $this->authorize('update', $product);
+
         return view('products.edit', [
             'product' => $product,
             'categories' => Category::query()->orderBy('name')->get(),
@@ -65,7 +71,11 @@ class ProductController extends Controller
 
     public function update(UpdateProductRequest $request, Product $product): RedirectResponse
     {
-        $this->products->update($product, $request->validated());
+        $this->products->update(
+            $product,
+            $request->productData(),
+            $request->file('image'),
+        );
 
         return redirect()
             ->route('products.index')
@@ -75,7 +85,12 @@ class ProductController extends Controller
     public function destroy(Product $product): RedirectResponse
     {
         $this->authorize('delete', $product);
-        $this->products->delete($product);
+
+        try {
+            $this->products->delete($product);
+        } catch (StoreException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return redirect()
             ->route('products.index')

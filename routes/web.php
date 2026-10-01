@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CheckoutController;
@@ -10,9 +11,29 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopController;
 use Illuminate\Support\Facades\Route;
 
+Route::post('/stripe/webhook', StripeWebhookController::class)
+    ->middleware('throttle:120,1')
+    ->name('stripe.webhook');
+
 Route::get('/', [ShopController::class, 'home'])->name('home');
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/shop/{product}', [ShopController::class, 'show'])->name('shop.show');
+
+Route::get('/cart', [CartController::class, 'show'])->name('cart.show');
+
+Route::post('/cart/items', [CartController::class, 'store'])
+    ->middleware('throttle:30,1')
+    ->name('cart.items.store');
+
+Route::patch('/cart/guest/{productId}', [CartController::class, 'updateGuest'])
+    ->middleware('throttle:30,1')
+    ->whereNumber('productId')
+    ->name('cart.guest.update');
+
+Route::delete('/cart/guest/{productId}', [CartController::class, 'destroyGuest'])
+    ->middleware('throttle:30,1')
+    ->whereNumber('productId')
+    ->name('cart.guest.destroy');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [AuthController::class, 'create'])->name('register');
@@ -26,7 +47,9 @@ Route::middleware('guest')->group(function () {
         ->middleware('throttle:password-reset')
         ->name('password.email');
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
-    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+        ->middleware('throttle:password-reset')
+        ->name('password.update');
 });
 
 Route::middleware('auth')->group(function () {
@@ -42,10 +65,12 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/cart', [CartController::class, 'show'])->name('cart.show');
-    Route::post('/cart/items', [CartController::class, 'store'])->name('cart.items.store');
-    Route::patch('/cart/items/{cartItem}', [CartController::class, 'update'])->name('cart.items.update');
-    Route::delete('/cart/items/{cartItem}', [CartController::class, 'destroy'])->name('cart.items.destroy');
+    Route::patch('/cart/items/{cartItem}', [CartController::class, 'update'])
+        ->middleware('throttle:30,1')
+        ->name('cart.items.update');
+    Route::delete('/cart/items/{cartItem}', [CartController::class, 'destroy'])
+        ->middleware('throttle:30,1')
+        ->name('cart.items.destroy');
 
     Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout.create');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
@@ -56,7 +81,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 });
 
-Route::middleware(['auth', 'verified', 'admin'])->group(function () {
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(function () {
+    Route::get('/orders', [OrderController::class, 'adminIndex'])->name('admin.orders.index');
+    Route::post('/orders/{order}/ship', [OrderController::class, 'ship'])->name('admin.orders.ship');
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('admin.orders.cancel');
+
     Route::resource('categories', CategoryController::class);
     Route::resource('products', ProductController::class);
+});
+
+Route::middleware(['auth', 'verified', 'admin'])->group(function () {
+    Route::redirect('/categories', '/admin/categories');
+    Route::redirect('/products', '/admin/products');
 });

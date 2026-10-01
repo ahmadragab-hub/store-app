@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\StoreException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
@@ -21,14 +22,13 @@ class ProductController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        $products = Product::query()
-            ->where('status', 'active')
-            ->with('category')
-            ->when($request->integer('category_id'), function ($query, $categoryId) {
-                $query->where('category_id', $categoryId);
-            })
-            ->latest()
-            ->paginate(10);
+        $search = $request->filled('q') ? $request->string('q')->trim()->toString() : null;
+
+        $products = $this->products->shopList(
+            $request->integer('category_id') ?: null,
+            $search !== '' ? $search : null,
+            $request->string('sort', 'latest')->toString(),
+        );
 
         return ProductResource::collection($products);
     }
@@ -36,7 +36,10 @@ class ProductController extends Controller
     public function store(StoreProductRequest $request): JsonResponse
     {
         $this->authorize('create', Product::class);
-        $product = $this->products->create($request->validated());
+        $product = $this->products->create(
+            $request->productData(),
+            $request->file('image'),
+        );
         $product->load('category');
 
         return (new ProductResource($product))
@@ -46,7 +49,7 @@ class ProductController extends Controller
 
     public function show(Product $product): ProductResource
     {
-        abort_unless($product->status === 'active', 404);
+        abort_unless($product->status === 'active' || auth()->user()?->isAdmin(), 404);
 
         $product->load('category');
 
@@ -56,16 +59,25 @@ class ProductController extends Controller
     public function update(UpdateProductRequest $request, Product $product): ProductResource
     {
         $this->authorize('update', $product);
-        $product = $this->products->update($product, $request->validated());
+        $product = $this->products->update(
+            $product,
+            $request->productData(),
+            $request->file('image'),
+        );
         $product->load('category');
 
         return new ProductResource($product);
     }
 
-    public function destroy(Product $product): Response
+    public function destroy(Product $product): Response|JsonResponse
     {
         $this->authorize('delete', $product);
-        $this->products->delete($product);
+
+        try {
+            $this->products->delete($product);
+        } catch (StoreException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         return response()->noContent();
     }

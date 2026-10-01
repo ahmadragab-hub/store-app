@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:password-reset');
-Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:password-reset');
 
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{category}', [CategoryController::class, 'show']);
@@ -28,9 +28,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/cart', [CartController::class, 'show']);
-    Route::post('/cart/items', [CartController::class, 'store']);
-    Route::patch('/cart/items/{cartItem}', [CartController::class, 'update']);
-    Route::delete('/cart/items/{cartItem}', [CartController::class, 'destroy']);
+    Route::post('/cart/items', [CartController::class, 'store'])->middleware('throttle:30,1');
+    Route::patch('/cart/items/{cartItem}', [CartController::class, 'update'])->middleware('throttle:30,1');
+    Route::delete('/cart/items/{cartItem}', [CartController::class, 'destroy'])->middleware('throttle:30,1');
 
     Route::post('/checkout', [CheckoutController::class, 'store']);
     Route::post('/orders/{order}/pay', [CheckoutController::class, 'pay']);
@@ -39,7 +39,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/orders/{order}', [OrderController::class, 'show']);
 });
 
-Route::middleware(['auth:sanctum', 'verified', 'admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'verified', 'admin'])->prefix('admin')->group(function () {
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::put('/categories/{category}', [CategoryController::class, 'update']);
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
@@ -47,4 +47,7 @@ Route::middleware(['auth:sanctum', 'verified', 'admin'])->group(function () {
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+
+    Route::post('/orders/{order}/ship', [OrderController::class, 'ship']);
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
 });

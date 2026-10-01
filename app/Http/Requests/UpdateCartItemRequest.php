@@ -16,8 +16,10 @@ class UpdateCartItemRequest extends FormRequest
 
     public function rules(): array
     {
+        $max = max(1, (int) config('cart.max_line_quantity', 99));
+
         return [
-            'quantity' => ['required', 'integer', 'min:1'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:'.$max],
         ];
     }
 }
